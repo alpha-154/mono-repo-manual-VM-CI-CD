@@ -5,6 +5,7 @@ export default async function Home() {
 
   return (
     <div>
+      <h1>is my first ci/cd is working ?</h1>
       {user?.username}
       {user?.password}
       <br />
