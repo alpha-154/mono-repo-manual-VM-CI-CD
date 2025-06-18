@@ -22,7 +22,7 @@ jobs:
       - name: SSH and Deploy
         run: |
           ssh -o StrictHostKeyChecking=no -i ssh_key.pem ubuntu@${{ secrets.DEV_EC2_IP }} << 'EOF'
-            cd book-my-show
+            cd mono-repo
             git pull
             pnpm install
             pnpm run build
