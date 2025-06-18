@@ -22,6 +22,24 @@ jobs:
       - name: SSH and Deploy
         run: |
           ssh -o StrictHostKeyChecking=no -i ssh_key.pem ubuntu@${{ secrets.DEV_EC2_IP }} << 'EOF'
+            # Setup PATH for pnpm and nvm-based Node.js installs (adjust if different)
+            export PATH="$HOME/.local/share/pnpm:$PATH"
+            export PATH="$HOME/.nvm/versions/node/v22.16.0/bin:$PATH"  # Update version if needed
+
+            # Install pnpm if not found
+            if ! command -v pnpm &> /dev/null; then
+              echo "pnpm not found, installing..."
+              curl -fsSL https://get.pnpm.io/install.sh | sh -
+              export PATH="$HOME/.local/share/pnpm:$PATH"
+            fi
+
+            # Install pm2 if not found
+            if ! command -v pm2 &> /dev/null; then
+              echo "pm2 not found, installing..."
+              npm install -g pm2
+            fi
+
+            # Navigate to project directory and deploy
             cd mono-repo
             git pull
             pnpm install
