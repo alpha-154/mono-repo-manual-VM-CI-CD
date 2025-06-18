@@ -1,0 +1,32 @@
+name: Deploy to staging
+
+on:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  redeploy_all_servers_to_staging:
+    name: Redeploy all servers to staging
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup SSH Key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > ssh_key.pem
+          chmod 600 ssh_key.pem
+
+      - name: SSH and Deploy
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ssh_key.pem ubuntu@${{ secrets.DEV_EC2_IP }} << 'EOF'
+            cd book-my-show
+            git pull
+            pnpm install
+            pnpm run build
+            pm2 restart http-server
+            pm2 restart nextjs-server
+            pm2 restart ws-server
+          EOF
