@@ -1,84 +1,108 @@
-# Turborepo starter
+AWS EC2 Server Setup & Node.js Deployment Guide
 
-This Turborepo starter is maintained by the Turborepo core team.
+✅ Step 1: Launch EC2 Instance
+1. Go to AWS EC2 Dashboard.
+2. Launch a new instance:
+    * Choose Ubuntu (e.g., Ubuntu 20.04 LTS).
+    * Select t2.micro or as per your need.
+    * In the Key Pair section:
+        * Create/download a new key pair (e.g., mrh.pem).
+    * Configure Security Group:
+        * Allow port 22 (SSH), port 80 (HTTP), and your Node.js port (e.g., 8080 or 3000).
 
-## Using this example
+✅ Step 2: Setup SSH Access on Local Machine
 
-Run the following command:
+📥 Move .pem file to ~/.ssh/ & Set Permissions
 
-```sh
-npx create-turbo@latest
-```
+# Create .ssh directory if it doesn't exist
+- `mkdir -p ~/.ssh`
 
-## What's inside?
+# Move the PEM file
+- `mv ~/Downloads/mrh.pem ~/.ssh/mrh.pem`
 
-This Turborepo includes the following packages/apps:
+# Set correct permissions
+- `chmod 400 ~/.ssh/mrh.pem`
 
-### Apps and Packages
+# Verify permission
+`ls -l ~/.ssh/mrh.pem`
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+✅ Step 3: Connect to EC2 Instance via SSH
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+`ssh -i ~/.ssh/mrh.pem ubuntu@<your-ec2-public-ip>`
+Replace <your-ec2-public-ip> with your actual EC2 public IPv4 address.
 
-### Utilities
+✅ Step 4: Install Node.js and Git
+# Install NVM
+- `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash`
 
-This Turborepo has some additional tools already setup for you:
+# Load NVM
+- `source ~/.bashrc`
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+# Install latest LTS Node.js version
+- `nvm install --lts`
 
-### Build
+# Install Git ( though most of the it get by default installed with the ubuntu machine)
+- sudo apt update
+- sudo apt install git -y
 
-To build all apps and packages, run the following command:
+✅ Step 5: Clone Your Node.js Project
+- git clone <your-repository-url>
+- cd <project-folder>
+- npm install
 
-```
-cd my-turborepo
-pnpm build
-```
+✅ Step 6: Install & Configure PM2 (Recommended)
+- npm install -g pm2
+- pm2 start index.js --name my-backend
+- pm2 save
+- pm2 startup
+- # Follow instructions and run the generated sudo command
 
-### Develop
+✅ Step 7: Install and Configure Nginx as Reverse Proxy
+- sudo apt install nginx -y
 
-To develop all apps and packages, run the following command:
+📂 Configure Nginx
+- sudo nano /etc/nginx/sites-available/default
 
-```
-cd my-turborepo
-pnpm dev
-```
+Replace the default config with the following:
+server {
+    listen 80;
+    server_name <your-ec2-public-ip>; # or your domain name
 
-### Remote Caching
+    location / {
+        proxy_pass http://localhost:8080; # or your Node.js port
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+✅ Save & Exit Nano:
+- Press Ctrl + O, Enter to save
+- Press Ctrl + X to exit
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+✅ Test & Reload Nginx
+- sudo nginx -t
+- sudo systemctl reload nginx
 
-```
-cd my-turborepo
-npx turbo login
-```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+✅ Step 8: Visit Your App
+* If using IP: http://<your-ec2-public-ip>/
+* If using domain: http://your-domain.com/
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+📌 Optional: Set Up Custom Domain (Route53 or external DNS)
+1. Go to your domain registrar (e.g., Namecheap, GoDaddy).
+2. Add an A record pointing to your EC2 Public IPv4 address.
+3. Wait for DNS to propagate.
 
-```
-npx turbo link
-```
 
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+🧠 Summary
+Task	Command
+Connect to EC2 =>	ssh -i ~/.ssh/mrh.pem ubuntu@<ip>
+Clone project =>	git clone <repo>
+Install deps =>	npm install
+Run server =>	pm2 start index.js --name my-app
+Set up Nginx =>	sudo nano /etc/nginx/sites-available/default
+Restart Nginx =>	sudo systemctl reload nginx
